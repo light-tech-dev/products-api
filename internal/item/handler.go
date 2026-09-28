@@ -26,7 +26,7 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 		return common.BadRequest(c, "invalid body")
 	}
 
-	item, err := h.svc.Create(productID, &req)
+	item, err := h.svc.Create(c.Context(), productID, &req)
 	if err != nil {
 		return common.BadRequest(c, err.Error())
 	}
@@ -41,7 +41,7 @@ func (h *Handler) ListByProduct(c *fiber.Ctx) error {
 		return common.BadRequest(c, "invalid product id")
 	}
 
-	items, err := h.svc.ListByProduct(productID)
+	items, err := h.svc.ListByProduct(c.Context(), productID)
 	if err != nil {
 		return common.Internal(c, err.Error())
 	}
@@ -59,7 +59,7 @@ func (h *Handler) Delete(c *fiber.Ctx) error {
 		return common.BadRequest(c, "invalid id")
 	}
 
-	if err := h.svc.Delete(id); err != nil {
+	if err := h.svc.Delete(c.Context(), id); err != nil {
 		return common.Internal(c, err.Error())
 	}
 

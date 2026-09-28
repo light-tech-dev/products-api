@@ -4,13 +4,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// Register يسجّل مسارات Product.
-//
-//     path('products/', views.ProductListCreate.as_view()),
-//     path('products/<int:pk>/', views.ProductDetail.as_view()),
-// ]
+// Register registers all product routes.
 func Register(router fiber.Router) {
-	svc := NewService(nil)
+	svc := NewService()
 	h := NewHandler(svc)
 
 	products := router.Group("/products")

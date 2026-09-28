@@ -6,22 +6,17 @@ import (
 	"github.com/abdallah-elngar/gormx"
 )
 
-type Service struct {
-	ctx context.Context
+type Service struct{}
+
+func NewService() *Service {
+	return &Service{}
 }
 
-func NewService(ctx context.Context) *Service {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	return &Service{ctx: ctx}
+func (s *Service) Query(ctx context.Context) *gormx.QuerySet[Item] {
+	return gormx.New[Item]().WithContext(ctx)
 }
 
-func (s *Service) Query() *gormx.QuerySet[Item] {
-	return gormx.New[Item]().WithContext(s.ctx)
-}
-
-func (s *Service) Create(productID uint, req *CreateItemRequest) (*ItemResponse, error) {
+func (s *Service) Create(ctx context.Context, productID uint, req *CreateItemRequest) (*ItemResponse, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
@@ -34,15 +29,15 @@ func (s *Service) Create(productID uint, req *CreateItemRequest) (*ItemResponse,
 		Notes:     req.Notes,
 	}
 
-	if err := s.Query().Create(item); err != nil {
+	if err := s.Query(ctx).Create(item); err != nil {
 		return nil, err
 	}
 
 	return FromItem(item), nil
 }
 
-func (s *Service) ListByProduct(productID uint) ([]ItemResponse, error) {
-	items, err := s.Query().
+func (s *Service) ListByProduct(ctx context.Context, productID uint) ([]ItemResponse, error) {
+	items, err := s.Query(ctx).
 		Filter("product_id", productID).
 		OrderBy("id").
 		All()
@@ -57,6 +52,6 @@ func (s *Service) ListByProduct(productID uint) ([]ItemResponse, error) {
 	return out, nil
 }
 
-func (s *Service) Delete(id uint) error {
-	return s.Query().Delete(id)
+func (s *Service) Delete(ctx context.Context, id uint) error {
+	return s.Query(ctx).Delete(id)
 }

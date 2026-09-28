@@ -23,7 +23,7 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		return common.BadRequest(c, "invalid body")
 	}
 
-	user, err := h.svc.Register(&req)
+	user, err := h.svc.Register(c.Context(), &req)
 	if err != nil {
 		if strings.Contains(err.Error(), "taken") {
 			return common.Conflict(c, err.Error())
@@ -41,7 +41,7 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		return common.BadRequest(c, "invalid body")
 	}
 
-	result, err := h.svc.Login(&req)
+	result, err := h.svc.Login(c.Context(), &req)
 	if err != nil {
 		return common.Unauthorized(c, err.Error())
 	}
@@ -53,10 +53,10 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 func (h *Handler) Me(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(uint)
 
-	user, err := h.svc.Query().Get(userID)
+	user, err := h.svc.GetByID(c.Context(), userID)
 	if err != nil {
 		return common.NotFound(c, "user not found")
 	}
 
-	return common.OK(c, FromUser(user))
+	return common.OK(c, user)
 }

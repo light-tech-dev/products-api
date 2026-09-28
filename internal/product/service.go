@@ -13,27 +13,26 @@ var (
 	ErrSKUAlreadyExists = errors.New("SKU already exists")
 )
 
-type Service struct {
-	ctx context.Context
+// Service handles product business logic.
+type Service struct{}
+
+// NewService creates a new ProductService.
+func NewService() *Service {
+	return &Service{}
 }
 
-func NewService(ctx context.Context) *Service {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	return &Service{ctx: ctx}
+// Query returns a QuerySet with the given context.
+func (s *Service) Query(ctx context.Context) *gormx.QuerySet[Product] {
+	return gormx.New[Product]().WithContext(ctx)
 }
 
-func (s *Service) Query() *gormx.QuerySet[Product] {
-	return gormx.New[Product]().WithContext(s.ctx)
-}
-
-func (s *Service) Create(req *CreateProductRequest) (*ProductResponse, error) {
+// Create creates a new product.
+func (s *Service) Create(ctx context.Context, req *CreateProductRequest) (*ProductResponse, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
 
-	exists, err := s.Query().Filter("sku", strings.ToUpper(req.SKU)).Exists()
+	exists, err := s.Query(ctx).Filter("sku", strings.ToUpper(req.SKU)).Exists()
 	if err != nil {
 		return nil, err
 	}
@@ -42,15 +41,16 @@ func (s *Service) Create(req *CreateProductRequest) (*ProductResponse, error) {
 	}
 
 	product := req.ToModel()
-	if err := s.Query().Create(product); err != nil {
+	if err := s.Query(ctx).Create(product); err != nil {
 		return nil, err
 	}
 
 	return FromProduct(product), nil
 }
 
-func (s *Service) GetByID(id uint) (*ProductResponse, error) {
-	product, err := s.Query().Get(id)
+// GetByID fetches a product by ID.
+func (s *Service) GetByID(ctx context.Context, id uint) (*ProductResponse, error) {
+	product, err := s.Query(ctx).Get(id)
 	if err != nil {
 		if gormx.IsNotFound(err) {
 			return nil, ErrProductNotFound
@@ -60,8 +60,9 @@ func (s *Service) GetByID(id uint) (*ProductResponse, error) {
 	return FromProduct(product), nil
 }
 
-func (s *Service) List(page, perPage int, filters map[string]any) (*gormx.PaginatedResult[ProductResponse], error) {
-	q := s.Query()
+// List returns paginated products with filters.
+func (s *Service) List(ctx context.Context, page, perPage int, filters map[string]any) (*gormx.PaginatedResult[ProductResponse], error) {
+	q := s.Query(ctx)
 
 	if category, ok := filters["category"].(string); ok && category != "" {
 		q = q.Filter("category", category)
@@ -103,30 +104,32 @@ func (s *Service) List(page, perPage int, filters map[string]any) (*gormx.Pagina
 	}, nil
 }
 
-func (s *Service) Update(id uint, req *UpdateProductRequest) (*ProductResponse, error) {
+// Update updates a product.
+func (s *Service) Update(ctx context.Context, id uint, req *UpdateProductRequest) (*ProductResponse, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
 
-	if _, err := s.GetByID(id); err != nil {
+	if _, err := s.GetByID(ctx, id); err != nil {
 		return nil, err
 	}
 
 	updates := req.ToMap()
 	if len(updates) == 0 {
-		return s.GetByID(id)
+		return s.GetByID(ctx, id)
 	}
 
-	if _, err := s.Query().Filter("id", id).UpdateMany(updates); err != nil {
+	if _, err := s.Query(ctx).Filter("id", id).UpdateMany(updates); err != nil {
 		return nil, err
 	}
 
-	return s.GetByID(id)
+	return s.GetByID(ctx, id)
 }
 
-func (s *Service) Delete(id uint) error {
-	if _, err := s.GetByID(id); err != nil {
+// Delete removes a product.
+func (s *Service) Delete(ctx context.Context, id uint) error {
+	if _, err := s.GetByID(ctx, id); err != nil {
 		return err
 	}
-	return s.Query().Delete(id)
+	return s.Query(ctx).Delete(id)
 }

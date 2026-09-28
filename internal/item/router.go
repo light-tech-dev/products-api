@@ -4,9 +4,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// Register يسجّل مسارات Item (nested تحت products).
+// Register registers item routes (nested under products).
 func Register(router fiber.Router) {
-	svc := NewService(nil)
+	svc := NewService()
 	h := NewHandler(svc)
 
 	// Nested: /products/:product_id/items

@@ -21,7 +21,7 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 		return common.BadRequest(c, "invalid body")
 	}
 
-	product, err := h.svc.Create(&req)
+	product, err := h.svc.Create(c.Context(), &req)
 	if err != nil {
 		if err == ErrSKUAlreadyExists {
 			return common.Conflict(c, err.Error())
@@ -39,7 +39,7 @@ func (h *Handler) GetByID(c *fiber.Ctx) error {
 		return common.BadRequest(c, "invalid id")
 	}
 
-	product, err := h.svc.GetByID(id)
+	product, err := h.svc.GetByID(c.Context(), id)
 	if err != nil {
 		return common.NotFound(c, err.Error())
 	}
@@ -63,7 +63,7 @@ func (h *Handler) List(c *fiber.Ctx) error {
 		filters["max_price"] = maxPrice
 	}
 
-	result, err := h.svc.List(p.Page, p.PerPage, filters)
+	result, err := h.svc.List(c.Context(), p.Page, p.PerPage, filters)
 	if err != nil {
 		return common.Internal(c, err.Error())
 	}
@@ -83,7 +83,7 @@ func (h *Handler) Update(c *fiber.Ctx) error {
 		return common.BadRequest(c, "invalid body")
 	}
 
-	product, err := h.svc.Update(id, &req)
+	product, err := h.svc.Update(c.Context(), id, &req)
 	if err != nil {
 		return common.BadRequest(c, err.Error())
 	}
@@ -98,7 +98,7 @@ func (h *Handler) Delete(c *fiber.Ctx) error {
 		return common.BadRequest(c, "invalid id")
 	}
 
-	if err := h.svc.Delete(id); err != nil {
+	if err := h.svc.Delete(c.Context(), id); err != nil {
 		return common.BadRequest(c, err.Error())
 	}
 

@@ -20,28 +20,22 @@ var (
 
 type Service struct {
 	cfg *config.Config
-	ctx context.Context
 }
 
 func NewService(cfg *config.Config) *Service {
-	return &Service{
-		cfg: cfg,
-		ctx: context.Background(),
-	}
+	return &Service{cfg: cfg}
 }
 
-// Query يرجّع QuerySet لـ User.
-func (s *Service) Query() *gormx.QuerySet[User] {
-	return gormx.New[User]().WithContext(s.ctx)
+func (s *Service) Query(ctx context.Context) *gormx.QuerySet[User] {
+	return gormx.New[User]().WithContext(ctx)
 }
 
-func (s *Service) Register(req *RegisterRequest) (*UserResponse, error) {
+func (s *Service) Register(ctx context.Context, req *RegisterRequest) (*UserResponse, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
 
-	// فحص التكرار
-	exists, err := s.Query().Q(gormx.QOr(
+	exists, err := s.Query(ctx).Q(gormx.QOr(
 		gormx.Eq("username", req.Username),
 		gormx.Eq("email", req.Email),
 	)).Exists()
@@ -52,7 +46,6 @@ func (s *Service) Register(req *RegisterRequest) (*UserResponse, error) {
 		return nil, ErrUsernameTaken
 	}
 
-	// تشفير
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
@@ -65,20 +58,19 @@ func (s *Service) Register(req *RegisterRequest) (*UserResponse, error) {
 		IsActive: true,
 	}
 
-	if err := s.Query().Create(user); err != nil {
+	if err := s.Query(ctx).Create(user); err != nil {
 		return nil, err
 	}
 
 	return FromUser(user), nil
 }
 
-func (s *Service) Login(req *LoginRequest) (*LoginResponse, error) {
+func (s *Service) Login(ctx context.Context, req *LoginRequest) (*LoginResponse, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
 
-	// جلب المستخدم
-	user, err := s.Query().Find("username", req.Username)
+	user, err := s.Query(ctx).Find("username", req.Username)
 	if err != nil {
 		if gormx.IsNotFound(err) {
 			return nil, ErrInvalidCredentials
@@ -86,7 +78,6 @@ func (s *Service) Login(req *LoginRequest) (*LoginResponse, error) {
 		return nil, err
 	}
 
-	// فحص كلمة المرور
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
 		return nil, ErrInvalidCredentials
 	}
@@ -95,7 +86,6 @@ func (s *Service) Login(req *LoginRequest) (*LoginResponse, error) {
 		return nil, errors.New("account is disabled")
 	}
 
-	// توليد JWT
 	token, err := s.generateToken(user)
 	if err != nil {
 		return nil, err
@@ -105,6 +95,14 @@ func (s *Service) Login(req *LoginRequest) (*LoginResponse, error) {
 		Token: token,
 		User:  FromUser(user),
 	}, nil
+}
+
+func (s *Service) GetByID(ctx context.Context, id uint) (*UserResponse, error) {
+	user, err := s.Query(ctx).Get(id)
+	if err != nil {
+		return nil, err
+	}
+	return FromUser(user), nil
 }
 
 func (s *Service) generateToken(user *User) (string, error) {

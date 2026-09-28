@@ -7,12 +7,7 @@ import (
 	"products-api/internal/middleware"
 )
 
-// Register يسجّل مسارات Auth.
-//
-//     path('auth/register/', views.Register.as_view()),
-//     path('auth/login/', views.Login.as_view()),
-//     path('auth/me/', views.Me.as_view()),
-// ]
+// Register registers auth routes.
 func Register(router fiber.Router, cfg *config.Config) {
 	svc := NewService(cfg)
 	h := NewHandler(svc)
@@ -23,6 +18,6 @@ func Register(router fiber.Router, cfg *config.Config) {
 	auth.Post("/register", h.Register)
 	auth.Post("/login", h.Login)
 
-	// Protected (يحتاج auth middleware)
+	// Protected
 	auth.Get("/me", middleware.JWTAuth(cfg), h.Me)
 }
