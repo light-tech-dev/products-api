@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Verify go.mod
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod go.sum || \
+            (echo "❌ go.mod is not tidy" && exit 1)
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build
+        run: go build ./...
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: --timeout=5m
+
+  e2e:
+    name: E2E Test
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Install dependencies
+        run: |
+          go mod download
+          sudo apt install -y jq
+
+      - name: Build server
+        run: go build -o bin/server ./cmd/server
+
+      - name: Start server
+        run: |
+          cp .env.example .env
+          ./bin/server &
+          sleep 3
+
+      - name: Test routes
+        run: |
+          chmod +x test-routes.sh
+          ./test-routes.sh

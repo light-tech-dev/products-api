@@ -1,0 +1,26 @@
+version: '3.9'
+
+services:
+  app:
+    build: .
+    container_name: products-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - APP_ENV=production
+      - APP_PORT=8080
+      - DB_DRIVER=sqlite
+      - DB_DSN=/app/data/products.db
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+    volumes:
+      - app_data:/app/data
+    networks:
+      - products-network
+
+volumes:
+  app_data:
+
+networks:
+  products-network:
+    driver: bridge

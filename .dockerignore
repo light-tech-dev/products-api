@@ -1,0 +1,17 @@
+.git
+.gitignore
+.env
+.env.example
+*.md
+!README.md
+.vscode
+.idea
+*.db
+*.sqlite
+bin/
+tmp/
+coverage.out
+coverage.html
+Dockerfile
+docker-compose.yml
+.dockerignore
